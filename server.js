@@ -17,20 +17,20 @@ app.use(logger('common'));
 app.use(jsonParser);
 app.use("/blog-posts", blogRouter);
 
-BlogPosts.create({
-  title: "some title",
-  content: "this is where i complain about my life",
-  author: "obama",
-});
+BlogPosts.create(
+  "some title",
+  "this is where i complain about my life",
+  "obama"
+);
 
 blogRouter.get("/", (req, res) => {
-  console.log('heard ya!');
   res.json(BlogPosts.get());
 });
 
 blogRouter.post("/", (req, res)=> {
   BlogPosts.create(req.body.title, req.body.content, req.body.author, req.body.publishDate);
-  res.status(201).end();
+  // res.status(201).end();
+  res.json(BlogPosts.get());
 });
 
 blogRouter.delete("/:id", (req, res)=>{
@@ -46,7 +46,40 @@ blogRouter.put("/:id", (req, res)=>{
     publishDate: req.body.publishDate, 
     id: req.params.id
   });
-  res.status(204).end();
+  res.send(BlogPosts.get());
 });
 
-app.listen(process.env.PORT || 8080);
+let server;
+
+function runServer() {
+  const port = process.env.PORT || 8080;
+  return new Promise((resolve, reject) => {
+    server = app.listen(port, () => {
+      console.log(`Your app is listening on port ${port}`);
+      resolve(server);
+    }).on('error', err => {
+      reject(err);
+    });
+  });
+}
+
+function closeServer() {
+  return new Promise((resolve, reject) => {
+    console.log('Closing server');
+    server.close(err => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+if (require.main === module) {
+  runServer().catch(err => console.error(err));
+}
+
+// app.listen(8080);
+
+module.exports = {app, runServer, closeServer};
